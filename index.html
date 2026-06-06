@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Альфа-клуб | VR Коллекция Игр</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f0f1e;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #0f0f1e;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .logo {
+            width: 75px;
+            height: 75px;
+            filter: drop-shadow(0 0 8px #00aaff) 
+                    drop-shadow(0 0 15px #00aaff);
+            transition: transform 0.3s;
+        }
+        .logo:hover {
+            transform: scale(1.08);
+        }
+        .header-title {
+            font-size: 2.2em;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00ccff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            text-shadow: 0 0 15px rgba(0, 170, 255, 0.5);
+        }
+        h1 {
+            text-align: center;
+            color: #00ffcc;
+            font-size: 2.6em;
+            margin: 40px 0 20px 0;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        /* Остальные стили оставляем как были */
+        #searchInput, #ageFilter {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 12px;
+            background: #16213e;
+            color: white;
+        }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 380px));
+            gap: 25px;
+            max-width: 1600px;
+            margin: 0 auto;
+            justify-content: center;
+        }
+        .game-card {
+            background: #16213e;
+            border-radius: 18px;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.1);
+            width: 100%;
+            max-width: 380px;
+            margin: 0 auto;
+        }
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 255, 204, 0.25);
+        }
+        .game-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .info {
+            padding: 20px;
+        }
+        button {
+            background: #00ffcc;
+            color: black;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #16213e;
+            max-width: 780px;
+            width: 100%;
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+        }
+        .close {
+            position: absolute;
+            top: 12px;
+            right: 20px;
+            font-size: 40px;
+            cursor: pointer;
+            color: #ff6666;
+        }
+        .modal-image {
+            width: 100%;              /* Растягиваем на всю ширину */
+            max-height: 520px;        /* Ограничиваем высоту */
+            object-fit: cover;      /* Сохраняем пропорции */
+            border-radius: 12px;
+            margin-bottom: 20px;
+            background: #0a0a14;
+        }
+    </style>
+</head>
+<body>
+    <!-- Новый Header -->
+    <header>
+        <img src="https://i.imgur.com/G64l9vs.jpeg" alt="Альфа-клуб" class="logo">
+        <h2 class="header-title">Альфа-клуб</h2>
+    </header>
+
+    <h1>🎮 VR Коллекция Игр</h1>
+    
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="🔍 Поиск по названию...">
+        <select id="ageFilter">
+            <option value="">Все возрасты</option>
+            <option value="3-6">3-6+</option>
+            <option value="8-12">8-12+</option>
+            <option value="14-18">14-18+</option>
+        </select>
+    </div>
+  
+    <div class="games-grid" id="games"></div>
+
+    <!-- Модальное окно -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">×</span>
+            <img id="modal-main-image" class="modal-image" src="" alt="">
+            <h2 id="modal-title"></h2>
+            <p id="modal-description"></p>
+        </div>
+    </div>
+
+    <script>
+        const games = [
+            {
+                title: "Dungeon of Eternity",
+                image: "https://tse2.mm.bing.net/th/id/OIP.AagstjWketGcU3uv8ER44AHaEK?cb=thfvnextfalcon2&rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Dungeons of Eternity VR — это динамичный кооперативный подземельный приключенческий боевик. Вместе с друзьями (или в одиночку) вы исследуете случайно генерируемые подземелья, сражаетесь с монстрами и собираете добычу, используя реалистичную физику оружия.",
+                genre: "Экшен, Кооператив, Приключения",
+                age: "12+",
+                playUrl: "https://www.meta.com/experiences/job-simulator/3235570703151406/"
+            },
+            {
+                title: "Job Simulator",
+                image: "https://th.bing.com/th/id/R.bcea081d71461c806cf7cd0b4f91c210?rik=CghkzRbU077dCQ&riu=http%3a%2f%2fwww.justpushstart.com%2fwp-content%2fuploads%2f2016%2f11%2fconstore_02.jpg&ehk=NRNWpEQTGH7%2bbCFlnN7USm3sIhsO%2b0M0gNeILs0nIIw%3d&risl=&pid=ImgRaw&r=0",
+                description: "Смешная VR-симуляция работы в 2050 году. Стань шеф-поваром, офисным работником, продавцом и другими профессиями!",
+                genre: "Симулятор, Юмор",
+                age: "6+",
+                playUrl: "https://www.meta.com/experiences/job-simulator/3235570703151406/"
+            },
+            {
+                title: "Beat Saber",
+                image: "https://th.bing.com/th/id/R.6f882c2ec6f673a2e53bd38dd6dfd263?rik=EzQjNXau%2f4C%2fQA&pid=ImgRaw&r=0",
+                description: "Beat Saber - это академическая VR-игра, в которой игроки с помощью двух клинков сражаются с кубами разных цветов, которые вылетают на них в такт музыка, которую игроки сами и загружают.",
+                genre: "Экшен, Ритм",
+                age: "3+",
+                playUrl: "#"
+            },
+            {
+                title: "Big Scary",
+                image: "https://static.wikia.nocookie.net/vr_gamepedia_en/images/9/9e/Big_Scary.png/revision/latest?cb=20240208151150",
+                description: "Big Scary — это многопользовательская игра жанра хоррор с множеством уровней и ужасных монстров, которые игроки должны избегать.",
+                genre: "Экшен, Приключение, Кооператив, Хоррор",
+                age: "10+",
+            },
+            {
+                title: "Into Black",
+                image: "https://tse3.mm.bing.net/th/id/OIP.4u-TJaoXSQ9HwWQLO9mwvgHaEK?rs=1&pid=ImgDetMain&o=7&rm=3", 
+                description: "Экшен-приключение от первого лица в VR. Исследуй тёмную инопланетную планету, добывай ресурсы, сражайся с монстрами в одиночку или в кооперативе.",
+                genre: "Экшен, Приключение, Кооператив",
+                age: "12+",
+                playUrl: "https://www.meta.com/experiences/into-black/5289374691122516/"
+            },
+            {
+                title: "I Am Hamster VR",
+                image: "https://cdn.sidequestvr.com/file/3143822/491821719_1215540200536239_2469568352143450836_n.webp?size=1000",
+                description: "Милый симулятор хомяка. Исследуй мир от лица маленького грызуна.",
+                genre: "Экшен, Аркада, Песочница, Платформер",
+                age: "6+",
+                playUrl: "https://www.meta.com/experiences/i-am-hamster-simulator/9101508319928510/"
+            },
+            {
+                title: "Angry Birds VR: Isle of Pigs",
+                image: "https://cdn.mobygames.com/covers/7698662-angry-birds-vr-isle-of-pigs-playstation-4-front-cover.jpg",
+                description: "Классика Angry Birds в VR. Уничтожай постройки свиней.",
+                genre: "Головоломка, Аркада",
+                age: "3+",
+                playUrl: "https://www.meta.com/experiences/angry-birds-vr-isle-of-pigs/2718606324833775/"
+            },
+            {
+                title: "Gorilla Tag",
+                image: "https://static.wikia.nocookie.net/gorillatag/images/e/ed/Gorillatagbanner.png/revision/latest?cb=20240216110428",
+                description: "Бесплатный многопользовательский VR. Бегай и лазай как горилла!",
+                genre: "Экшен, Кооператив",
+                age: "10+",
+                playUrl: "https://www.meta.com/experiences/gorilla-tag/4979055762136823/"
+            },
+            {
+                title: "The Climb 2",
+                image: "https://tse3.mm.bing.net/th/id/OIP.QX_Ox8Cdg4ws0zwQVySUywHaEJ?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Реалистичное скалолазание в потрясающих локациях.",
+                genre: "Спорт, Симулятор",
+                age: "3+",
+                playUrl: "https://www.meta.com/experiences/the-climb-2/2617233878395214/"
+            },
+            {
+                title: "Vacation Simulator",
+                image: "https://vacationsimulatorgame.com/img/screenshots/beach/VacationSimulator_Beach_Screenshot00.png",
+                description: "Симулятор отпуска. Отдыхай... или работай на курорте!",
+                genre: "Симулятор, Юмор, Песочница",
+                age: "3+",
+                playUrl: "https://www.meta.com/experiences/vacation-simulator/2393300320759737/"
+            },
+            {
+                title: "Titans Clinic VR",
+                image: "https://www.vrmoo.net/wp-content/uploads/2023/05/10001-28.jpg",
+                description: "Стань дантистом для гигантов-титанов. Весёлая и странная симуляция.",
+                genre: "Симулятор, Аркада, Песочница",
+                age: "3+",
+                playUrl: "https://www.meta.com/experiences/titans-clinic/6035422123217068/"
+            },
+            {
+                title: "Spatial Zombies",
+                image: "https://tse4.mm.bing.net/th/id/OIP.8Tt8WPBWAQ8jg2Za84DcAAHaDu?cb=thfvnextfalcon2&rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Mixed Reality зомби-шутер. Зомби прорываются через стены твоей комнаты!",
+                genre: "Шутер, Выживание, Зомби",
+                age: "12+",
+                playUrl: "https://www.meta.com/experiences/spatial-zombies-mixed-reality/24151641901194680/"
+            },
+            {
+                title: "Laser Thief",
+                image: "https://questplushistory.com/wp-content/uploads/laser-thief-1024x576.jpeg",
+                description: "Mixed Reality. Пробирайся через лазеры в своей комнате как в фильме про ограбление.",
+                genre: "Аркада, Симулятор, Экшен",
+                age: "6+",
+                playUrl: "https://www.meta.com/experiences/laser-thief/8601091189913934/"
+            },
+            {
+                title: "Killer Frequency",
+                image: "https://tse3.mm.bing.net/th/id/OIP.NYRxyPt1nOSJNqFZa7lrtgHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Хоррор-радиоведущий 80-х. Спасай жителей, решай загадки под ретро-музыку.",
+                genre: "Хоррор, Приключение, Детектив",
+                age: "12+",
+                playUrl: "https://www.meta.com/experiences/killer-frequency/4629225960449550/"
+            },
+            {
+                title: "Hide the Corpse",
+                image: "https://cdn.sidequestvr.com/file/699261/854x480-listing-new.png",
+                description: "Физическая комедия. Спрячь тело до приезда полиции. Хаос гарантирован!",
+                genre: "Симулятор, Головоломка",
+                age: "12+",
+                playUrl: "https://www.meta.com/experiences/hide-the-corpse/8714253315313680/"
+            },
+            {
+                title: "Dig VR",
+                image: "https://storage.ghost.io/c/2a/2f/2a2f38f0-4b71-407a-9c7e-18a9e2541980/content/images/size/w1024/format/webp/2024/11/Cover_Landscape_Dig-1.png",
+                description: "Симулятор экскаватора. Управляй тяжёлой техникой и копай!",
+                genre: "Симулятор, Аркада, Песочница",
+                age: "10+",
+                playUrl: "https://www.meta.com/experiences/dig-vr/6128709557192619/"
+            },
+            {
+                title: "Симулятор Парикмахерской VR",
+                image: "https://vrplanets.ru/images/2024/03/07/Barbershop_Simulator_large.webp",
+                description: "Весёлый симулятор парикмахера. Стриги, крась и укладывай волосы разным клиентам, используй множество инструментов и создавай прически в юмористической атмосфере.",
+                genre: "Симулятор",
+                age: "3+",
+                playUrl: "#"
+            },
+            {
+                title: "Aim XR",
+                image: "https://images.squarespace-cdn.com/content/v1/60ee2eaaafee646b28e6aa42/38e27cfb-4041-4984-8e37-4c4db48d46fe/AIMXRLogo.jpg",
+                description: "Динамичный шутер с акцентом на точную стрельбу. Тренируй прицел, рефлексы и соревнуйся с другими игроками в различных режимах и локациях.",
+                genre: "Шутер, Экшен, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "MotoX VR",
+                image: "https://pic.imgdb.cn/item/64d561161ddac507cc31fbdb.jpg",
+                description: "Адреналиновые гонки на мотоциклах по сложным трассам. Ощути скорость, прыжки и полное управление мотоциклом в виртуальной реальности.",
+                genre: "Гонки, Экшен, Спорт, Симулятор, Кооператив",
+                age: "10+",
+                playUrl: "#"
+            },
+            {
+                title: "In Death: Unchained",
+                image: "https://entertainment-focus.com/wp-content/uploads/2020/11/inDeathUnchained_keyArt_02_1920x1080.jpg",
+                description: "Эпический VR-рогалик-шутер. Сражайся с ордами врагов с помощью лука и стрел в процедурно генерируемых уровнях. Каждый забег уникальный.",
+                genre: "Симулятор, Экшен",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Pistol Whip",
+                image: "https://www.play3.de/wp-content/uploads/2022/11/Pistol-Whip-VR-Teaser.jpg",
+                description: "Ритмичный шутер под зажигательную музыку в стиле John Wick. Стреляй под бит, выполняй трюки и наслаждайся крутым саундтреком.",
+                genre: "Шутер, Экшен, Ритм",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Survival Nation",
+                image: "https://tse4.mm.bing.net/th/id/OIP.l1z67-I2QLpoB-sZJ8dU8QHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Выживание в большом открытом мире после катастрофы. Собирай ресурсы, строй базу и защищайся от различных опасностей.",
+                genre: "Выживание, Зомби, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Asgard's Wrath 2",
+                image: "https://gazettely.com/wp-content/uploads/2024/01/Asgards-Wrath-2-6-jpg.webp",
+                description: "Большая эпическая RPG с огромным миром, богами и множеством квестов. Одна из самых масштабных и красивых игр для VR.",
+                genre: "Экшен, Приключение, Открытый мир",
+                age: "17+",
+                playUrl: "#"
+            },
+            {
+                title: "Paranoia VR",
+                image: "https://th.bing.com/th/id/OIP.iWg4-CQcqQCto2TAlI62pgHaEK?w=312&h=180&c=7&r=0&o=7&pid=1.7&rm=3",
+                description: "Психологический хоррор, который играет на твоих страхах и паранойе. Будь готов к неожиданным поворотам и напряжённой атмосфере.",
+                genre: "Выживание, Головоломка, Хоррор, Кооператив",
+                age: "16+",
+                playUrl: "#"
+            },
+            {
+                title: "Animal Company VR",
+                image: "https://ovrdoz.com/wp-content/uploads/2025/06/animal-company-logo.webp",
+                description: "Милый и расслабляющий симулятор ухода за разными животными. Корми, играй и заботься о своих питомцах в уютном мире.",
+                genre: "Хоррор, Симулятор, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Santa Climber VR",
+                image: "https://tse1.mm.bing.net/th/id/OIP.75AFl-QYh6uCpsrGMJXvAgHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Новогоднее скалолазание от лица Санты. Карабкайся по сложным поверхностям и доставляй подарки в праздничной атмосфере.",
+                genre: "Симулятор, Приключения",
+                age: "6+",
+                playUrl: "#"
+            },
+            {
+                title: "Thief Simulator VR: Greenview Street",
+                image: "https://tse2.mm.bing.net/th/id/OIP.5ChBdTx5IA2zbNKirGmEIwHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Стань мастером воровства. Проникай в дома, ищи ценные вещи и старайся не попасться на глаза хозяевам.",
+                genre: "Симулятор, Песочница",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Spatial Ops",
+                image: "https://static0.gamerantimages.com/wordpress/wp-content/uploads/2024/11/spatial-ops-2.jpg",
+                description: "Mixed Reality шутер. Сражайся с врагами прямо в своей комнате с помощью смешанной реальности.",
+                genre: "Шутер, Экшен, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "First Encounters",
+                image: "https://tse1.mm.bing.net/th/id/OIP.W00HGRGboqqVGrTJHFgaQAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Контакт с инопланетянами. Исследуй, взаимодействуй и узнавай новые формы жизни в увлекательном VR-приключении.",
+                genre: "Симулятор, Шутер",
+                age: "3+",
+                playUrl: "#"
+            },
+            {
+                title: "Barbaria",
+                image: "https://tse1.mm.bing.net/th/id/OIP.gNW68yAUIQ5oQk1OFJlr_gHaEK?cb=thfvnextfalcon2&rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Динамичная смесь экшена и стратегии в фэнтезийном мире. Управляй варварами и сражайся за территории.",
+                genre: "Экшен, Стратегия, Кооператив",
+                age: "16+",
+                playUrl: "#"
+            },
+            {
+                title: "Octoberfest VR",
+                image: "https://www.gameswirtschaft.de/wp-content/uploads/2024/08/Oktoberfest-Official-Game-VR-K5-060824.jpg",
+                description: "Праздничная атмосфера Октоберфеста. Пей пиво, играй в мини-игры и веселись на традиционном немецком фестивале.",
+                genre: "Шутер, Платформер, Аркада, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Dimensional Double Shift",
+                image: "https://bleedingcool.com/wp-content/uploads/2025/12/Dimensional-Double-Shift-Decembner-2025.jpg",
+                description: "Увлекательная головоломка с порталами и сменой измерений. Решай сложные загадки, меняя реальность.",
+                genre: "Симулятор, Юмор, Кооператив",
+                age: "10+",
+                playUrl: "#"
+            },
+            {
+                title: "Float VR",
+                image: "https://tse4.mm.bing.net/th/id/OIP.GVRUBJ0jjSeOOCp-hkZVEgHaGL?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Расслабляющая игра с плаванием и медитацией в красивых подводных и космических мирах.",
+                genre: "Релаксация, Медитация, Mixed Reality",
+                age: "3+",
+                playUrl: "#"
+            },
+            {
+                title: "After the Fall",
+                image: "https://tse3.mm.bing.net/th/id/OIP.W-4_4l9VQUq_Tzd0rtvTGQHaHa?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Постапокалиптический кооперативный шутер. Сражайся с ордами мутантов в разрушенном мире.",
+                genre: "Шутер, Зомби, Экшен, Кооператив",
+                age: "16+", 
+                playUrl: "#"
+            },
+            {
+                title: "Pets and Stuff VR",
+                image: "https://tse1.mm.bing.net/th/id/OIP.vjBsZ2i7bjNbUhGrEK5bugHaDq?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Милый симулятор ухода за домашними питомцами. Играй, корми и проводи время со своими любимцами.",
+                genre: "Симулятор, Аркада, Песочница",
+                age: "3+",
+                playUrl: "#"
+            },
+            {
+                title: "Horror Free VR",
+                image: "https://scontent.oculuscdn.com/v/t64.5771-25/473393538_1226595232475331_8285028064128248759_n.webp?stp=dst-webp_s1440x1440&_nc_cat=100&ccb=1-7&_nc_sid=6e7a0a&_nc_ohc=Kx6_8ojaazwQ7kNvwGYpvbF&_nc_oc=AdobUZ33en1i-nAQxVkD_NanueyqsmFYPVTFXM3G0WSDOQy-T2HQh17GHoEbdRi0OSE&_nc_zt=3&_nc_ht=scontent.oculuscdn.com&_nc_ss=7b289&oh=00_Af86_VWNI3tJEdPIgFKPy46OQSaIv8WmM2qBEDJrKuriNA&oe=6A28A7AE",
+                description: "Хоррор-игра с различными страшными сценариями. Проверь свои нервы в нескольких жутких историях.",
+                genre: "Приключения, Экшен, Хоррор, Кооператив",
+                age: "16+",
+                playUrl: "#"
+            },
+            {
+                title: "Medieval Dynasty New Settlement",
+                image: "https://www.gamersglobal.de/sites/gamersglobal.de/files/steckbrief/cover/25151/MedievalDynastyNewSettlement_Logo.jpg",
+                description: "Средневековое выживание и строительство. Основывай поселение, развивай его и выживай в суровом мире.",
+                genre: "Приключения, Песочница, Выживание, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Liminality VR",
+                image: "https://tse4.mm.bing.net/th/id/OIP.ezURfL787rCBoPXxeWm0CwAAAA?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Исследование лимитного пространства и пустых зданий. Атмосферная прогулка по странным и пугающим локациям.",
+                genre: "Платформер, Экшен, Выживание, Кооператив",
+                age: "14+",
+                playUrl: "#"
+            },
+            {
+                title: "Crisis Brigade 2 Reloaded",
+                image: "https://crisisbrigade.com/img/cover2.jpg",
+                description: "Кооперативный зомби-шутер. Сражайся вместе с друзьями против волн зомби в разных локациях.",
+                genre: "Шутер, Зомби, Кооператив",
+                age: "16+",
+                playUrl: "#"
+            },
+            {
+                title: "Breachers",
+                image: "https://tse3.mm.bing.net/th/id/OIP.fBxBxlaHvNXi-8H0Z_CY2wHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Командный VR-шутер, где нужно прорывать стены и захватывать точки в тактических перестрелках.",
+                genre: "Шутер, Экшен, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Zero Caliber: Reloaded",
+                image: "https://tse3.mm.bing.net/th/id/OIP.6f5GEuD_2ghbqmU9NylcVwHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Реалистичный военный шутер с большим выбором оружия, миссиями и кооперативным режимом.",
+                genre: "Шутер, Экшен, Кооператив",
+                age: "16+",
+                playUrl: "#"
+            },
+            {
+                title: "Onward",
+                image: "https://tse1.mm.bing.net/th/id/OIP.cp5T9mrri9IN1UVQJ36PywHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Тактический многопользовательский военный симулятор. Работай в команде и выполняй сложные боевые задачи.",
+                genre: "Шутер, Экшен, Кооператив",
+                age: "16+",
+                playUrl: "#"
+            },
+            {
+                title: "Into the Radius",
+                image: "https://blog.vive.com/express_media/images/Into_the_Radius.scale-100.jpg",
+                description: "Реалистичный survival-хоррор в аномальной зоне. Исследуй опасный мир, собирай артефакты и пытайся выжить.",
+                genre: "Выживание, Экшен, Шутер",
+                age: "16+",
+                playUrl: "#"
+            },
+            {
+                title: "Green Hell VR",
+                image: "https://image.api.playstation.com/vulcan/ap/rnd/202412/1615/1ec1eaf2ad4d30ef8f16f251158214fbb009a9aacbfd7c7d.png",
+                description: "Выживание в джунглях Амазонии. Строй укрытия, добывай еду, лечи болезни и пытайся выбраться.",
+                genre: "Выживание, Симулятор, Хоррор, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Noclip VR",
+                image: "https://static2.vrdb.app/images/bb92fe9c-53c8-4aa4-9a6e-62f5a67c3fed.jpeg",
+                description: "Исследование багов реальности и лимитного пространства. Атмосферная и необычная прогулка.",
+                genre: "Хоррор, Кооператив",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "The Thrill of the Fight",
+                image: "https://i0.wp.com/thevr.coach/wp-content/uploads/2023/04/Thrill-of-the-fight-jpg.webp",
+                description: "Очень реалистичный бокс в виртуальной реальности. Почувствуй каждый удар и отработай настоящую технику боя.",
+                genre: "Спорт, Бокс, Симулятор",
+                age: "12+",
+                playUrl: "#"
+            },
+            {
+                title: "Wonder VR",
+                image: "https://th.bing.com/th/id/OIP.fSejU0V9ec5aqeVMV8U-_QHaEK?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Красивая и расслабляющая игра с удивительными мирами и визуальными эффектами.",
+                genre: "Релаксация, Приключения",
+                age: "6+",
+                playUrl: "#"
+            },
+            {
+                title: "Fitness Free VR",
+                image: "https://img.freepik.com/premium-photo/dynamic-vr-workout-home-man-engages-virtual-fitness-training_1154395-155.jpg",
+                description: "Фитнес и тренировки в виртуальной реальности. Двигайся, сжигай калории и поддерживай форму весело.",
+                genre: "Фитнес, Спорт",
+                age: "6+",
+                playUrl: "#"
+            },
+            {
+                title: "Shark Go VR",
+                image: "https://tse2.mm.bing.net/th/id/OIP.W_j4MS7mrY3XS81LkS-vbQHaEK?cb=thfvnextfalcon2&rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Приключения с акулами. Плавай, исследуй океан и взаимодействуй с морскими обитателями.",
+                genre: "Приключения, Симулятор, Кооператив",
+                age: "6+",
+                playUrl: "#"
+            },
+            {
+                title: "Scary Baboon",
+                image: "https://tse4.mm.bing.net/th/id/OIP.S72gYQ3zn-9lYYyOMnhmUgHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Хоррор с агрессивными бабуинами. Будь осторожен — эти обезьяны очень опасны.",
+                genre: "Хоррор",
+                age: "16+",
+                playUrl: "#"
+            },
+            {
+                title: "Reave: Limited Access",
+                image: "https://tse2.mm.bing.net/th/id/OIP.buC_hW-Bxmv9JChTuZKojwHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+                description: "Приключенческая игра с элементами исследования и боя. Ограниченный доступ к контенту.",
+                genre: "Экшен, Приключения",
+                age: "12+",
+                playUrl: "#"
+            }
+
+            // Добавляй сюда новые игры
+        ];
+
+        const container = document.getElementById('games');
+        const searchInput = document.getElementById('searchInput');
+        const ageFilter = document.getElementById('ageFilter');
+
+        function getAgeGroup(age) {
+            if (!age) return "";
+            if (age === "0+" || age === "3+" || age === "6+") return "3-6";
+            if (age === "8+" || age === "10+" || age === "12+") return "8-12";
+            return "14-18";
+        }
+
+        function filterGames() {
+            const searchText = searchInput.value.toLowerCase().trim();
+            const selectedGroup = ageFilter.value;
+
+            const filtered = games.filter(game => {
+                const matchSearch = game.title.toLowerCase().includes(searchText) ||
+                                   (game.genre && game.genre.toLowerCase().includes(searchText));
+                
+                let matchAge = true;
+                if (selectedGroup) {
+                    const gameGroup = getAgeGroup(game.age);
+                    matchAge = gameGroup === selectedGroup;
+                }
+                return matchSearch && matchAge;
+            });
+
+            renderGames(filtered);
+        }
+
+        function renderGames(filteredGames) {
+            container.innerHTML = '';
+            filteredGames.forEach((game, index) => {
+                const globalIndex = games.indexOf(game);
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.innerHTML = `
+                    <img src="${game.image}" alt="${game.title}">
+                    <div class="info">
+                        <h3>${game.title}</h3>
+                        <div class="genre-age">
+                            <span class="genre">${game.genre}</span> • ${game.age}
+                        </div>
+                        <p>${game.description.substring(0, 130)}...</p>
+                        <button onclick="showDetails(${globalIndex})">Подробнее</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        searchInput.addEventListener('input', filterGames);
+        ageFilter.addEventListener('change', filterGames);
+
+        renderGames(games);
+
+        function showDetails(index) {
+            const game = games[index];
+            
+            document.getElementById('modal-main-image').src = game.image;
+            document.getElementById('modal-title').textContent = game.title;
+            document.getElementById('modal-description').textContent = game.description;
+            
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+</body>
+</html>
